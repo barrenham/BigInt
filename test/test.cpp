@@ -40,24 +40,131 @@ TEST(Constructor, REVERSE)
 	EXPECT_EQ(a, 1);
 }
 
-TEST(arithmetic, add1)
-{
-	BigInt a = 1;
-	BigInt b = 2;
-	EXPECT_EQ(a + b, 3);
-	EXPECT_EQ(a + 2, 3);
-	EXPECT_EQ(1 + b, 3);
+TEST(arithmetic, addition) {
+    // 基础加法验证
+    BigInt a = 1;
+    BigInt b = 2;
+    EXPECT_EQ(a + b, 3);
+    EXPECT_EQ(a + 2, 3);
+    EXPECT_EQ(1 + b, 3);
+
+    // 零值运算
+    BigInt zero = 0;
+    EXPECT_EQ(zero + zero, 0);         // 0 + 0 = 0
+    EXPECT_EQ(a + zero, a);            // 1 + 0 = 1
+    EXPECT_EQ(zero + b, b);            // 0 + 2 = 2
+    EXPECT_EQ(BigInt(-5) + zero, -5);  // 负数加零
+
+    // 正负混合运算
+    BigInt c = -3;
+    EXPECT_EQ(a + c, -2);              // 1 + (-3) = -2
+    EXPECT_EQ(c + b, -1);             // -3 + 2 = -1
+    EXPECT_EQ(c + BigInt(-2), -5);     // -3 + (-2) = -5
+    EXPECT_EQ(BigInt(5) + c, 2);       // 5 + (-3) = 2
+
+    // 大数运算
+    BigInt huge1("999999999999999999999999999999");
+    BigInt huge2("1");
+    BigInt huge_sum("1000000000000000000000000000000");
+    EXPECT_EQ(huge1 + huge2, huge_sum); // 大数进位测试
+
+    BigInt max_int("2147483647");
+    EXPECT_EQ(max_int + BigInt(1), BigInt("2147483648")); // 突破int32边界
+
+    // 字符串隐式转换运算（假设支持）
+    EXPECT_EQ(BigInt("123456789") + 1, BigInt("123456790"));
+    EXPECT_EQ(987654321 + BigInt("1000000000"), BigInt("1987654321"));
+
+    // 链式加法验证
+    EXPECT_EQ(a + b + BigInt(3), 6);    // 1 + 2 + 3 = 6
+    EXPECT_EQ(c + zero + a, -2);        // -3 + 0 + 1 = -2
+
+    // 交换律验证
+    BigInt d("12345678901234567890");
+    BigInt e("98765432109876543210");
+    EXPECT_EQ(d + e, e + d);            // 123... + 987... = 987... + 123...
+
+    // 极限边界测试
+    BigInt max_uint("9999999999999999999999999999999999999999");
+    EXPECT_EQ(max_uint + BigInt(1), BigInt("10000000000000000000000000000000000000000"));
+    EXPECT_EQ(BigInt("-9999999999999999999") + BigInt(1), BigInt("-9999999999999999998"));
+
+    // 非常规输入验证
+#ifdef BIGINT_ALLOW_LEADING_ZEROS
+    EXPECT_EQ(BigInt("000100") + BigInt("0200"), 300); // 前导零处理
+#endif
+
+    // 异常输入测试（需确保构造函数有校验）
+#ifdef BIGINT_SAFE_MODE
+    EXPECT_THROW(BigInt("12a3") + 5, std::invalid_argument); // 非法字符
+#endif
 }
 
-TEST(arithmetic, sub1)
-{
-	BigInt a = 1;
-	BigInt b = 2;
-	EXPECT_EQ(a - b, -1);
-	EXPECT_EQ(a - 2, -1);
-	EXPECT_EQ(1 - b, -1);
-}
+TEST(arithmetic, subtraction) {
+    // 基础减法验证
+    BigInt a = 1;
+    BigInt b = 2;
+    EXPECT_EQ(a - b, -1);      // 1 - 2 = -1
+    EXPECT_EQ(a - 2, -1);      // 1 - 2 = -1
+    EXPECT_EQ(1 - b, -1);      // 1 - 2 = -1
 
+    // 零值运算
+    BigInt zero = 0;
+    EXPECT_EQ(zero - zero, 0);         // 0 - 0 = 0
+    EXPECT_EQ(a - zero, a);            // 1 - 0 = 1
+    EXPECT_EQ(zero - b, -b);           // 0 - 2 = -2
+    EXPECT_EQ(BigInt(-5) - zero, -5);  // -5 - 0 = -5
+
+    // 正负混合运算
+    BigInt c = -3;
+    EXPECT_EQ(a - c, 4);               // 1 - (-3) = 4
+    EXPECT_EQ(c - b, -5);              // -3 - 2 = -5
+    EXPECT_EQ(c - BigInt(-2), -1);     // -3 - (-2) = -1
+    EXPECT_EQ(BigInt(5) - c, 8);       // 5 - (-3) = 8
+
+    // 大数运算
+    BigInt huge1("1000000000000000000000000000000");
+    BigInt huge2("1");
+    BigInt huge_sub("999999999999999999999999999999");
+    EXPECT_EQ(huge1 - huge2, huge_sub); // 大数借位测试
+
+    BigInt same1("123456789012345678901234567890");
+    BigInt same2("123456789012345678901234567890");
+    EXPECT_EQ(same1 - same2, 0);       // 相同大数相减
+
+    // 边界值测试
+    BigInt max_int("2147483647");
+    EXPECT_EQ(max_int - BigInt(-1), BigInt("2147483648")); // 正数减负数
+    EXPECT_EQ(BigInt("-2147483648") - 1, BigInt("-2147483649"));
+
+    // 链式减法验证
+    EXPECT_EQ(BigInt(10) - 3 - 2, 5);      // 10-3-2=5
+    EXPECT_EQ(c - zero - a, -4);           // -3-0-1=-4
+
+    // 反向减法验证
+    EXPECT_EQ(b - a, 1);                   // 2 - 1 = 1
+    EXPECT_EQ(BigInt(5) - BigInt(3), 2);
+    EXPECT_EQ(BigInt(3) - BigInt(5), -2);
+
+    // 字符串隐式转换运算
+    EXPECT_EQ(BigInt("1000000000") - 1, BigInt("999999999"));
+    EXPECT_EQ(987654321 - BigInt("1000000000"), BigInt("-12345679"));
+
+    // 极限边界测试
+    BigInt max_uint("10000000000000000000000000000000000000000");
+    EXPECT_EQ(max_uint - BigInt(1), BigInt("9999999999999999999999999999999999999999"));
+    EXPECT_EQ(BigInt("-9999999999999999999") - BigInt(1), BigInt("-10000000000000000000"));
+
+    // 非常规输入验证
+#ifdef BIGINT_ALLOW_LEADING_ZEROS
+    EXPECT_EQ(BigInt("000100") - BigInt("0200"), -100); // 前导零处理
+#endif
+
+    // 异常输入测试（需确保构造函数校验）
+#ifdef BIGINT_SAFE_MODE
+    EXPECT_THROW(BigInt("12a3") - 5, std::invalid_argument);
+#endif
+}
 TEST(compare, compare_less) {
     // 正数比较
     EXPECT_TRUE(BigInt(1) < BigInt(2));

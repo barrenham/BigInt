@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\packages\googlebenchmark.1.8.3.1\build\googlebenchmark.props" Condition="Exists('..\packages\googlebenchmark.1.8.3.1\build\googlebenchmark.props')" />
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -21,8 +22,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{1d758857-c5a3-40bf-b4be-34d10e4f816c}</ProjectGuid>
-    <RootNamespace>BigInt</RootNamespace>
+    <ProjectGuid>{16e07265-b40e-4991-b2d6-dc73d57f110a}</ProjectGuid>
+    <RootNamespace>utils</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -40,13 +41,13 @@
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -129,20 +130,25 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="BigInt.h" />
-    <ClInclude Include="BigInt_math.h" />
-    <ClInclude Include="resource.h" />
+    <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="BigInt_math.cpp" />
-    <ClCompile Include="compare.cpp" />
-    <ClCompile Include="constructor.cpp" />
-    <ClCompile Include="get_item.cpp" />
-    <ClCompile Include="arithmetic.cpp" />
-    <ClCompile Include="io.cpp" />
-    <ClCompile Include="operate.cpp" />
+    <ProjectReference Include="..\BigInt\BigInt.vcxproj">
+      <Project>{1d758857-c5a3-40bf-b4be-34d10e4f816c}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
+    <Import Project="..\packages\googlebenchmark.1.8.3.1\build\googlebenchmark.targets" Condition="Exists('..\packages\googlebenchmark.1.8.3.1\build\googlebenchmark.targets')" />
   </ImportGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>这台计算机上缺少此项目引用的 NuGet 程序包。使用“NuGet 程序包还原”可下载这些程序包。有关更多信息，请参见 http://go.microsoft.com/fwlink/?LinkID=322105。缺少的文件是 {0}。</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\googlebenchmark.1.8.3.1\build\googlebenchmark.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\googlebenchmark.1.8.3.1\build\googlebenchmark.props'))" />
+    <Error Condition="!Exists('..\packages\googlebenchmark.1.8.3.1\build\googlebenchmark.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\googlebenchmark.1.8.3.1\build\googlebenchmark.targets'))" />
+  </Target>
 </Project>

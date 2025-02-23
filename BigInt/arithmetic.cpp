@@ -11,9 +11,10 @@ void BigInt::add_value(const std::string& rhs_value)
 	size_t max_length = std::max(value.length(), rhs_value.length());
 	// 给value末尾补0
 	value.resize(max_length, '0');
-	for (int i = 0; i < rhs_value.length(); i++)
+	for (int i = 0; i < max_length; i++)
 	{
-		value[i] += rhs_value[i] - '0';
+		if(i<rhs_value.length())
+			value[i] += rhs_value[i] - '0';
 		if (value[i] > '9')
 		{
 			value[i] -= 10;
@@ -21,6 +22,10 @@ void BigInt::add_value(const std::string& rhs_value)
 				value.push_back('1');
 			else
 				value[i + 1]++;
+		}
+		else if (i >= rhs_value.length())
+		{
+			break;
 		}
 	}
 }
@@ -34,13 +39,18 @@ void BigInt::sub_value(const std::string& rhs_value)
 	size_t max_length = std::max(value.length(), rhs_value.length());
 	// 给value末尾补0
 	value.resize(max_length, '0');
-	for (int i = 0; i < rhs_value.length(); i++)
+	for (int i = 0; i < max_length; i++)
 	{
-		value[i] -= (rhs_value[i] - '0');
+		if (i < rhs_value.length())
+			value[i] -= (rhs_value[i] - '0');
 		if (value[i] < '0')
 		{
 			value[i] += 10;
 			value[i + 1]--;
+		}
+		else if (i >= rhs_value.length())
+		{
+			break;
 		}
 	}
 }
@@ -116,6 +126,12 @@ BigInt BigInt::operator*(const BigInt& rhs) const
 
 BigInt& BigInt::operator*=(const BigInt& rhs)
 {
+	if (value == "0" or rhs.value == "0")
+	{
+		value = "0";
+		sign = true;
+		return *this;
+	}
 	BigInt temp = rhs;
 	int max_length=std::max(value.length(),temp.value.length());
 	if (max_length == 1)
@@ -126,23 +142,16 @@ BigInt& BigInt::operator*=(const BigInt& rhs)
 		operator=(temp);
 		return *this;
 	}
-	value.resize(max_length,'0');
-	temp.value.resize(max_length, '0');
-	std::string temp_str=temp.to_pure_string();
-	std::string value_str=to_pure_string();
 	int left = max_length / 2;
 	int right = max_length - left;
-	BigInt a(value_str.substr(0, left));
-	BigInt b(value_str.substr(left, right));
-	BigInt c(temp_str.substr(0, left));
-	BigInt d(temp_str.substr(left, right));
-	
-	BigInt ac = a * c;
-	BigInt ad = a * d;
-	BigInt bd = b * d;
-	BigInt bc = b * c;
-
-	temp=(bd + (ad + bc).shift_by_ten(right) + ac.shift_by_ten(right*2));
+	BigInt a= temp.sub_pos_BigInt(left, max_length);
+	BigInt b= temp.sub_pos_BigInt(0, left);
+	BigInt c= this->sub_pos_BigInt(left, max_length);
+	BigInt d= this->sub_pos_BigInt(0, left);
+	BigInt z0 = b * d;
+	BigInt z1 = (a + b) * (c + d);
+	BigInt z2 = a * c;
+	temp = z2.shift_by_ten(left * 2) + (z1 - z2 - z0).shift_by_ten(left) + z0;
 	if (rhs.sign != sign)
 	{
 		temp = -temp;
@@ -152,18 +161,23 @@ BigInt& BigInt::operator*=(const BigInt& rhs)
 	return *this;
 }
 
-BigInt& BigInt::shift_by_ten(const long long n)
-{
+BigInt BigInt::shift_by_ten(const long long n)
+{	
 	assert(n >= 0);
 	if (value == "0")
 		return *this;
 	if (n == 0)
 	{
-		value = "1";
 		return *this;
 	}
-	value = std::string(n, '0') + value;
-	return *this;
+	BigInt result;
+	result.sign = true;
+	result.value=std::string(n, '0') + value;
+	if (is_negetive())
+	{
+		result = -result;
+	}
+	return result;
 }
 BigInt BigInt::operator/(const BigInt& rhs) const
 {

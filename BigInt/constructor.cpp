@@ -75,7 +75,7 @@ BigInt::BigInt(const std::string& s)
 		value = "0";
 		sign = true;
 		//如果本身字符串无值,那么需要一个运行时警告
-		std::cerr<< "Warning: empty string, set to 0" << std::endl;
+		//std::cerr<< "Warning: empty string, set to 0" << std::endl;
 		reverse_value();
 		return;
 	}
@@ -102,7 +102,7 @@ BigInt::BigInt(const std::string& s)
 		else
 			value = "0";
 		//如果出现非数字字符,那么需要一个运行时警告
-		std::cerr << "Warning: non-digit character detected ,"<<"only the first part is used" << std::endl;
+		//std::cerr << "Warning: non-digit character detected ,"<<"only the first part is used" << std::endl;
 	}
 	else
 	{
@@ -118,3 +118,9 @@ BigInt::BigInt(const BigInt& rhs): value(rhs.value), sign(rhs.sign) { }
 //	std::string str = std::string(c_str);
 //	operator=(BigInt(str));
 //}
+
+BigInt::BigInt(const unsigned int n):BigInt(static_cast<long>(n)){}
+
+BigInt::BigInt(const unsigned long n):BigInt(static_cast<long long>(n)){}
+
+BigInt::BigInt(const unsigned long long n):BigInt(std::to_string(n)){}

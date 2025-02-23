@@ -18,6 +18,9 @@ public:
 	BigInt(const int);
 	BigInt(const long);
 	BigInt(const long long);
+	BigInt(const unsigned int);
+	BigInt(const unsigned long);
+	BigInt(const unsigned long long);
 	//BigInt(const char[]);
 	BigInt(const std::string&);
 	BigInt(const BigInt&);
@@ -84,9 +87,11 @@ public:
 	std::string to_string() const;
 	std::string to_pure_string() const;
 	
-	BigInt& shift_by_ten(const long long);
-	/*friend std::ostream& operator<<(std::ostream&, const BigInt&);
-	friend std::istream& operator>>(std::istream&, BigInt&);*/
+	BigInt shift_by_ten(const long long);
+	friend std::ostream& operator<<(std::ostream&, const BigInt&);
+	friend std::istream& operator>>(std::istream&, BigInt&);
+
+	BigInt sub_pos_BigInt(int lowbit_offset, int highbit_offset) const;
 private:
 	inline void add_value(const std::string&);
 	inline void sub_value(const std::string&);

@@ -15,37 +15,11 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="BigInt.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="BigInt_math.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="resource.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
+    <ClCompile Include="main.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="constructor.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="operate.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="compare.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="arithmetic.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="get_item.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="BigInt_math.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="io.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>
