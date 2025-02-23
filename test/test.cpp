@@ -376,7 +376,16 @@ TEST(compare, compare_greater) {
 
 TEST(arithmetic, multiply) {
 
-    EXPECT_EQ(BigInt(10).shift_by_ten(1), 100);
+
+    EXPECT_EQ(BigInt(1) << 1, 10);
+    EXPECT_EQ(BigInt(1) << 2, 100);
+    EXPECT_EQ(BigInt(1) << 3, 1000);
+    EXPECT_EQ(BigInt(1) << 4, 10000);
+    EXPECT_EQ(BigInt(1) << 5, 100000);
+    EXPECT_EQ(BigInt(1) << 6, 1000000);
+    EXPECT_EQ(BigInt(1) << 7, 10000000);
+    EXPECT_EQ(BigInt(1) << 8, 100000000);
+    EXPECT_EQ(BigInt(1) << 9, 1000000000);
     // 基本乘法
     EXPECT_EQ(BigInt(2) * BigInt(3), 6);
     EXPECT_EQ(BigInt(0) * BigInt(12345), 0);

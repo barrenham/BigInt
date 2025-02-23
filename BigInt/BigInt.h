@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string>
 #include <concepts>
+#include <vector>
 
 template<typename T>
 concept ValidType = std::same_as<T, std::string> ||
@@ -11,9 +12,28 @@ concept ValidType = std::same_as<T, std::string> ||
 					std::same_as<T, long long>;
 
 
+constexpr uint64_t largest_modulo(uint64_t max_value) {
+	uint64_t result = 1;
+	while (result <= max_value / 10) {
+		result *= 10;
+	}
+	return result;
+}
+
+constexpr uint64_t largest_block_digit(uint64_t max_value) {
+	uint64_t result = 0;
+	uint64_t count = 1;
+	while (count <= max_value / 10) {
+		result += 1;
+		count *= 10;
+	}
+	return result;
+}
+
 class BigInt
 {
 public:
+	typedef std::vector<uint32_t> BigInt_Vector;
 	BigInt();
 	BigInt(const int);
 	BigInt(const long);
@@ -24,6 +44,7 @@ public:
 	//BigInt(const char[]);
 	BigInt(const std::string&);
 	BigInt(const BigInt&);
+	BigInt(BigInt&&);
 	~BigInt() =default;
 
 	BigInt& operator=(BigInt rhs);
@@ -34,11 +55,14 @@ public:
 	BigInt operator*(const BigInt&) const;
 	BigInt operator/(const BigInt&) const;
 	BigInt operator%(const BigInt&) const;
+	BigInt operator<<(const long long) const;
 
 	BigInt& operator+=(const BigInt&);
 	BigInt& operator-=(const BigInt&);
 	BigInt& operator*=(const BigInt&);
 	BigInt& operator/=(const BigInt&);
+
+	BigInt& operator<<=(const long long n);
 
 	template<typename T>
 		requires ValidType<T>
@@ -87,30 +111,30 @@ public:
 	std::string to_string() const;
 	std::string to_pure_string() const;
 	
-	BigInt shift_by_ten(const long long);
+
 	friend std::ostream& operator<<(std::ostream&, const BigInt&);
 	friend std::istream& operator>>(std::istream&, BigInt&);
 
-	BigInt sub_pos_BigInt(int lowbit_offset, int highbit_offset) const;
+	BigInt sub_pos_BigInt(long long lowbit_offset, long long highbit_offset) const;
 private:
-	inline void add_value(const std::string&);
-	inline void sub_value(const std::string&);
-	inline bool greater(const std::string&) const;
-	inline bool less(const std::string&) const;
-	inline void reverse_value() { std::reverse(value.begin(), value.end()); }
-	inline void remove_tail_zero() 
+	constexpr static int max_per_block_num = largest_modulo(std::numeric_limits<uint32_t>::max());
+	constexpr static int max_per_block_digit = largest_block_digit(std::numeric_limits<uint32_t>::max());
+	inline void add_value(const BigInt_Vector&);
+	inline void sub_value(const BigInt_Vector&);
+	inline bool greater(const BigInt_Vector&) const;
+	inline bool less(const BigInt_Vector&) const;
+	inline bool is_zero() const
 	{
-		size_t end = value.find_last_not_of('0');
-		if (end == value.npos)
-		{
-			value = "0";
-		}
-		else
-		{
-			value.resize(end+1);
-		}
+		return value.empty() or (value.size() == 1 && value[0] == 0);
 	}
-	std::string value;
+	void set_zero()
+	{
+		value.resize(1, 0);
+		value[0] = 0;
+		sign = true;
+	}
+	void left_shift(const long long n);
+	BigInt_Vector value;
 	bool sign; // true if positive, false if negative
 };
 

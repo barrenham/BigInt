@@ -1,7 +1,7 @@
 #include "BigInt.h"
 #include <string>
 
-bool BigInt::greater(const std::string& rhs) const
+bool BigInt::greater(const BigInt_Vector& rhs) const
 {
 	if (this->value.size() > rhs.size())
 		return true;
@@ -9,7 +9,7 @@ bool BigInt::greater(const std::string& rhs) const
 		return false;
 	else
 	{
-		for (int i = this->value.length()-1; i >=0; i--)
+		for (int i = this->value.size()-1; i >=0; i--)
 		{
 			if (this->value[i] > rhs[i])
 				return true;
@@ -20,7 +20,7 @@ bool BigInt::greater(const std::string& rhs) const
 	return false;
 }
 
-bool BigInt::less(const std::string& rhs) const
+bool BigInt::less(const BigInt_Vector& rhs) const
 {
 	if (this->value.size() < rhs.size())
 		return true;
@@ -28,7 +28,7 @@ bool BigInt::less(const std::string& rhs) const
 		return false;
 	else
 	{
-		for (int i = this->value.length()-1; i >=0; i--)
+		for (int i = this->value.size()-1; i >=0; i--)
 		{
 			if (this->value[i] < rhs[i])
 				return true;
@@ -43,14 +43,12 @@ bool BigInt::operator==(const BigInt& rhs) const
 {
 	if (this->sign != rhs.sign)
 	{
-		if (value == "0" and rhs.value == "0")
+		if (this->value.size() == 1 && this->value[0] == 0)
 		{
-			return true;
+			if(rhs.value.size() == 1 && rhs.value[0] == 0)
+				return true;
 		}
-		else
-		{
-			return false;
-		}
+		return false;
 	}
 
 	if(this->value != rhs.value)

@@ -3,66 +3,19 @@
 #include <exception>
 #include <algorithm>
 
-BigInt::BigInt(): value("0"), sign(true) { }
+BigInt::BigInt(): value(1,0), sign(true) { }
 
 
-BigInt::BigInt(const int n)
+BigInt::BigInt(const int n) :BigInt(std::to_string(n))
 {
-	if (n < 0)
-	{
-		sign = false;
-		if(n == INT_MIN)
-			value = std::to_string(-static_cast<long long>(n));
-		else
-			value = std::to_string(-n);
-	}
-	else
-	{
-		sign = true;
-		value = std::to_string(n);
-	}
-	reverse_value();
 }
 
-BigInt::BigInt(const long n)
+BigInt::BigInt(const long n) :BigInt(std::to_string(n))
 {
-	if (n < 0)
-	{
-		sign = false;
-		if(n== LONG_MIN)
-			value = std::to_string(-static_cast<long long>(n));
-		else
-			value = std::to_string(-n);
-	}
-	else
-	{
-		sign = true;
-		value = std::to_string(n);
-	}
-	reverse_value();
 }
 
-BigInt::BigInt(const long long n)
+BigInt::BigInt(const long long n) :BigInt(std::to_string(n))
 {
-	if (n < 0)
-	{
-		sign = false;
-		if (n == LLONG_MIN) 
-		{
-			value=(std::to_string(-(n + 1)));
-			reverse_value();
-			operator-=(1);
-			return;
-		}
-		else
-			value = std::to_string(-n);
-	}
-	else
-	{
-		sign = true;
-		value = std::to_string(n);
-	}
-	reverse_value();
 }
 
 
@@ -72,11 +25,9 @@ BigInt::BigInt(const std::string& s)
 	str.erase(0, str.find_first_not_of(' '));
 	if(str.empty())
 	{
-		value = "0";
-		sign = true;
+		set_zero();
 		//如果本身字符串无值,那么需要一个运行时警告
 		//std::cerr<< "Warning: empty string, set to 0" << std::endl;
-		reverse_value();
 		return;
 	}
 	if (str[0] == '-')
@@ -89,26 +40,31 @@ BigInt::BigInt(const std::string& s)
 	str.erase(0, str.find_first_not_of('0'));
 	if (str.empty())
 	{
-		value = "0";
-		sign = true;
-		reverse_value();
+		set_zero();
 		return;
 	}
 	auto it = str.find_first_not_of("0123456789");
 	if(it!=str.npos)
 	{
-		if (it != 0)
-			value = str.substr(0, it);
-		else
-			value = "0";
-		//如果出现非数字字符,那么需要一个运行时警告
-		//std::cerr << "Warning: non-digit character detected ,"<<"only the first part is used" << std::endl;
+		str.substr(0, it);
 	}
-	else
+	uint64_t decimal_digit_index = 0;
+	uint64_t current_decimal_base = 1;
+	for (int i = str.length()-1; i >= 0; i--)
 	{
-		value = str;
+		if (decimal_digit_index == 0)
+		{
+			value.push_back(0);
+		}
+		value.back()+=current_decimal_base*(str[i]-'0');
+		decimal_digit_index++;
+		current_decimal_base*=10;
+		if (decimal_digit_index == max_per_block_digit)
+		{
+			decimal_digit_index = 0;
+			current_decimal_base = 1;
+		}
 	}
-	reverse_value();
 }
 
 BigInt::BigInt(const BigInt& rhs): value(rhs.value), sign(rhs.sign) { }
@@ -124,3 +80,5 @@ BigInt::BigInt(const unsigned int n):BigInt(static_cast<long>(n)){}
 BigInt::BigInt(const unsigned long n):BigInt(static_cast<long long>(n)){}
 
 BigInt::BigInt(const unsigned long long n):BigInt(std::to_string(n)){}
+
+BigInt::BigInt(BigInt&&rvalue):sign(rvalue.sign),value(std::move(rvalue.value)){}
