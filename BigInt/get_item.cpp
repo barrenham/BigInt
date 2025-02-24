@@ -52,3 +52,12 @@ BigInt BigInt::sub_pos_BigInt(long long lowbit_offset, long long highbit_offset)
 	result.sign = true;
 	return result;
 }
+
+int BigInt::to_int() const
+{
+	if(value.size()>1)
+	{
+		throw std::overflow_error("BigInt to int overflow");
+	}
+	return std::stoi(to_string());
+}

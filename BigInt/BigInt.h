@@ -68,7 +68,6 @@ public:
 	// 赋值操作
 	BigInt& operator=(BigInt rhs);				///< 拷贝/移动赋值（使用copy-and-swap惯用法）
 	BigInt& operator=(const std::string&);		///< 从十进制字符串赋值
-
 	/**
 	 * @name 算术运算符
 	 * @{
@@ -155,6 +154,8 @@ public:
 	 * @return 示例："12345678901234567890"
 	 */
 	std::string to_pure_string() const;
+
+	int to_int() const;
 	
 
 	friend std::ostream& operator<<(std::ostream&, const BigInt&);
@@ -200,6 +201,8 @@ public:
 	BigInt& divide_by_small(uint32_t divisor);
 
 	BigInt& multiply_by_small(const BigInt& factor);
+
+	BigInt& multiply_by_small(const uint32_t rhs);
 	
 private:
 	constexpr static int max_per_block_num = largest_modulo(std::numeric_limits<uint32_t>::max());

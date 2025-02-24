@@ -202,6 +202,11 @@ BigInt& BigInt::operator-=(const BigInt& rhs)
 	}
 }
 
+//用于乘法的asyn 异步
+BigInt multiply(const BigInt& x, const BigInt& y) {
+	return x * y;
+}
+
 BigInt BigInt::operator*(const BigInt& rhs) const
 {
 	if (this->value.size() >= rhs.value.size())
@@ -230,20 +235,24 @@ BigInt& BigInt::operator*=(const BigInt& rhs)
 	{
 		if (value.size() == max_length)
 		{
-			uint64_t carry = 0;
-			for (size_t i = 0; i < value.size(); ++i) {
-				uint64_t result = (1LL * value[i]) * rhs.value[0] + carry;
-				value[i] = result % max_per_block_num;
-				carry = result / max_per_block_num;
-			}
-			// 如果最后还有进位，添加到末尾
-			if (carry > 0) {
-				value.push_back(carry);
-			}
+			this->multiply_by_small(rhs.value[0]);
 		}
 		else
 		{
-			*this = BigInt(rhs) * (*this);
+			*this = BigInt(rhs).multiply_by_small(*this);
+		}
+		sign = result_sign;
+		return *this;
+	}
+	if (max_length <= 2)
+	{
+		if (value.size() == max_length)
+		{
+			this->multiply_by_small(rhs);
+		}
+		else
+		{
+			*this = BigInt(rhs).multiply_by_small(*this);
 		}
 		sign = result_sign;
 		return *this;
@@ -267,9 +276,16 @@ BigInt& BigInt::operator*=(const BigInt& rhs)
 	BigInt b= rhs.sub_pos_BigInt(0, left);
 	BigInt c= this->sub_pos_BigInt(left, max_length);
 	BigInt d= this->sub_pos_BigInt(0, left);
-	BigInt z0 = b * d;
-	BigInt z1 = (a + b) * (c + d);
-	BigInt z2 = a * c;
+
+	BigInt z0;
+	BigInt z1;
+	BigInt z2;
+
+	z0 = b * d;
+	z1 = (a + b) * (c + d);
+	z2 = a * c;
+
+	// 合并结果
 	this->value = std::move(
 		(
 			(((z2 << (left * max_per_block_digit)) + (z1 - z2 - z0)) << (left * max_per_block_digit)) + z0
@@ -310,6 +326,7 @@ BigInt& BigInt::operator/=(const BigInt& rhs) {
 		sign = result_sign;
 		return *this;
 	}
+
 	int divisor_digits = divisor.decimal_digits();
 	BigInt reciprocal = compute_decimal_reciprocal(divisor, divisor_digits);
 
@@ -351,8 +368,8 @@ BigInt BigInt::compute_decimal_reciprocal(const BigInt& d, int digits) {
 	std::string high_part_str = d_str.substr(0, high_digits);
 	BigInt d_high(high_part_str);
 
-	// 计算10^(2*digits) / (d_high + 1)
-	BigInt numerator = BigInt(1)<<(2 * digits - (static_cast<int>(d_str.length()) - high_digits));
+	// 计算10^(2*digits-high_digits) / (d_high + 1)
+	BigInt numerator = BigInt("1" + std::string((2 * digits - (static_cast<int>(d_str.length()) - high_digits)), '0'));
 	BigInt denominator = d_high;
 	BigInt reciprocal_approx = numerator / (denominator + 1);
 	return reciprocal_approx;
@@ -525,6 +542,23 @@ void BigInt::right_shift(const long long n)
 	{
 		set_zero();
 	}
+}
+
+BigInt& BigInt::multiply_by_small(const uint32_t rhs)
+{
+	bool result_sign = (sign == true);
+	uint64_t carry = 0;
+	for (size_t i = 0; i < value.size(); ++i) {
+		uint64_t result = (1LL * value[i]) * rhs + carry;
+		value[i] = result % max_per_block_num;
+		carry = result / max_per_block_num;
+	}
+	// 如果最后还有进位，添加到末尾
+	if (carry > 0) {
+		value.push_back(carry);
+	}
+	sign = result_sign;
+	return *this;
 }
 
 BigInt& BigInt::multiply_by_small(const BigInt& rhs) 

@@ -82,3 +82,4 @@ BigInt::BigInt(const unsigned long n):BigInt(static_cast<long long>(n)){}
 BigInt::BigInt(const unsigned long long n):BigInt(std::to_string(n)){}
 
 BigInt::BigInt(BigInt&&rvalue)noexcept :sign(rvalue.sign),value(std::move(rvalue.value)) {}
+

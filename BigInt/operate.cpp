@@ -27,3 +27,4 @@ BigInt BigInt::operator-() const
 	result.sign = !result.sign;
 	return result;
 }
+

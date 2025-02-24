@@ -15,20 +15,11 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="util.cpp">
+    <ClCompile Include="benchmark.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
-    <None Include="test.md" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="util.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
+    <None Include="benchmark.md" />
   </ItemGroup>
 </Project>
