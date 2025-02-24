@@ -5,10 +5,10 @@
 本项目为个人学习C++而写，性能可能较差
 
 ## 测速结果
-请见:https://github.com/barrenham/BigInt/blob/master/benchmark/benchmark.md
+请见:[BENCHMARK](https://github.com/barrenham/BigInt/blob/master/benchmark/benchmark.md)
 
 ## 测试结果
-请见:https://github.com/barrenham/BigInt/blob/master/utils/test.md
+请见:[TEST](https://github.com/barrenham/BigInt/blob/master/utils/test.md)
 ---
 
 ## 核心特性
