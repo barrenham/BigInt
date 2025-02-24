@@ -3,6 +3,38 @@
 
 #include <cassert>
 
+
+/**
+ * @brief 针对小整数的快速除法（优化除数在uint32_t范围内）
+ * @param divisor 除数（必须为正整数且 <= UINT32_MAX）
+ * @return BigInt& 当前对象的引用（商）
+ */
+BigInt& BigInt::divide_by_small(uint32_t divisor) {
+	if (divisor == 0) {
+		throw std::invalid_argument("Division by zero");
+	}
+
+	uint64_t remainder = 0; // 余数累加器
+	const uint64_t base = max_per_block_num; // 每个块的基数（如1e9）
+
+	// 从最高位块向最低位处理
+	for (int i = value.size() - 1; i >= 0; --i) {
+		uint64_t combined = remainder * base + value[i];
+		value[i] = static_cast<uint32_t>(combined / divisor);
+		remainder = combined % divisor;
+	}
+
+	while (!value.empty() && value.back() == 0) {
+		value.pop_back();
+	}
+	if (value.empty()) {
+		set_zero();
+	}
+
+	return *this;
+}
+
+
 // 该函数要求 两BigInt同号
 void BigInt::add_value(const BigInt_Vector& rhs_value)
 {
@@ -96,8 +128,16 @@ void BigInt::sub_value(const BigInt_Vector& rhs_value)
 
 BigInt BigInt::operator+(const BigInt& rhs) const
 {
-	BigInt result = *this;
-	return result += rhs;
+	if (this->value.size() >= rhs.value.size())
+	{
+		BigInt result = *this;
+		result += rhs;
+		return result;
+	}
+	else
+	{
+		return rhs + (*this);
+	}
 }
 
 BigInt& BigInt::operator+=(const BigInt& rhs)
@@ -115,8 +155,16 @@ BigInt& BigInt::operator+=(const BigInt& rhs)
 
 BigInt BigInt::operator-(const BigInt& rhs) const
 {
-	BigInt result = *this;
-	return result -= rhs;
+	if (this->value.size() >= rhs.value.size())
+	{
+		BigInt result = *this;
+		result -= rhs;
+		return result;
+	}
+	else
+	{
+		return -(rhs - (*this));
+	}
 }
 
 BigInt& BigInt::operator-=(const BigInt& rhs)
@@ -156,8 +204,16 @@ BigInt& BigInt::operator-=(const BigInt& rhs)
 
 BigInt BigInt::operator*(const BigInt& rhs) const
 {
-	BigInt result=*this;
-	return result*=rhs;
+	if (this->value.size() >= rhs.value.size())
+	{
+		BigInt result = *this;
+		result *= rhs;
+		return result;
+	}
+	else
+	{
+		return rhs * (*this);
+	}
 }
 
 BigInt& BigInt::operator*=(const BigInt& rhs)
@@ -167,20 +223,42 @@ BigInt& BigInt::operator*=(const BigInt& rhs)
 		set_zero();
 		return *this;
 	}
-	int max_length=std::max(value.size(),rhs.value.size());
-	if (max_length == 1)
+	bool result_sign = (sign == rhs.sign);
+	long long max_length=std::max(value.size(),rhs.value.size());
+	long long min_length = std::min(value.size(), rhs.value.size());
+	if (min_length == 1)
 	{
-		this->value=std::move(
-			BigInt(1ULL*value[0]*rhs.value[0]).value
-		);
-		if (this->sign != rhs.sign)
+		if (value.size() == max_length)
 		{
-			this->sign = false;
+			uint64_t carry = 0;
+			for (size_t i = 0; i < value.size(); ++i) {
+				uint64_t result = (1LL * value[i]) * rhs.value[0] + carry;
+				value[i] = result % max_per_block_num;
+				carry = result / max_per_block_num;
+			}
+			// 如果最后还有进位，添加到末尾
+			if (carry > 0) {
+				value.push_back(carry);
+			}
 		}
 		else
 		{
-			this->sign = true;
+			*this = BigInt(rhs) * (*this);
 		}
+		sign = result_sign;
+		return *this;
+	}
+	if (min_length * min_length <= max_length)
+	{
+		if (value.size() == max_length)
+		{
+			this->multiply_by_small(rhs);
+		}
+		else
+		{
+			*this= BigInt(rhs).multiply_by_small(*this);
+		}
+		sign=result_sign;
 		return *this;
 	}
 	int left = max_length / 2;
@@ -192,15 +270,12 @@ BigInt& BigInt::operator*=(const BigInt& rhs)
 	BigInt z0 = b * d;
 	BigInt z1 = (a + b) * (c + d);
 	BigInt z2 = a * c;
-	this->value = std::move(((z2<<(left * 2LL * max_per_block_digit)) + ((z1 - z2 - z0)<<(left*max_per_block_digit)) + z0).value);
-	if (this->sign != rhs.sign)
-	{
-		this->sign = false;
-	}
-	else
-	{
-		this->sign = true;
-	}
+	this->value = std::move(
+		(
+			(((z2 << (left * max_per_block_digit)) + (z1 - z2 - z0)) << (left * max_per_block_digit)) + z0
+		).value
+	);
+	this->sign = result_sign;
 	return *this;
 }
 
@@ -209,49 +284,78 @@ BigInt BigInt::operator/(const BigInt& rhs) const
 	BigInt result = *this;
 	return result /= rhs;
 }
-
-BigInt& BigInt::operator/=(const BigInt& rhs) 
-{
-	BigInt result = 0;
-	BigInt abs_this = ((*this) >= 0) ? (*this) : (-*this);
-	BigInt abs_rhs = ((rhs) >= 0) ? (rhs) : (-rhs);
-	if (abs_rhs > abs_this)
-	{
-		set_zero();
-		return *this;
-	}
-	if (rhs == 0)
-	{
+BigInt& BigInt::operator/=(const BigInt& rhs) {
+	if (rhs.is_zero()) {
 		throw std::invalid_argument("Division by zero");
 	}
-	long long left = 0, right = (static_cast<long long>(std::max(value.size(),rhs.value.size())))* max_per_block_digit;
-	for (long long i = right; i >= left; i--)
+
+	// 处理符号和简单情况
+	bool result_sign = (sign == rhs.sign);
+	sign = true;
+	BigInt divisor = rhs.abs();
+
+	if (*this == divisor)
 	{
-		auto sum = abs_rhs*(BigInt(1)<<i);
-		for (int j = 0; j < 9; j++)
-		{
-			if (sum <= abs_this) 
-			{
-				result += (BigInt(1)<<i);
-				abs_this -= sum;
-			}
-			else
-			{
-				break;
-			}
-		}
+		set_one();
+		sign = result_sign;
+		return *this;
 	}
-	if (rhs.is_negetive() ==  is_negetive())
+	if (*this < divisor) {
+		set_zero();
+		sign = result_sign;
+		return *this;
+	}
+	if (divisor.value.size() == 1) {
+		this->divide_by_small(divisor.value[0]);
+		sign = result_sign;
+		return *this;
+	}
+	int divisor_digits = divisor.decimal_digits();
+	BigInt reciprocal = compute_decimal_reciprocal(divisor, divisor_digits);
+
+	for (int i = 0; i < log10(this->value.size())+1; ++i) {
+		BigInt product = divisor * reciprocal;
+		BigInt adjustment = (BigInt(2) << (2 * divisor_digits)) - product;
+		reciprocal *= adjustment;
+		reciprocal >>= (2 * divisor_digits); 
+	}
+
+	// 计算商
+	BigInt quotient = (*this) * reciprocal;
+	BigInt remainder = (*this) * (divisor)-quotient;
+
+	BigInt remain_cnt = 0;
+	while(remainder >= *this) {
+		auto temp = (remainder / (*this));
+		remain_cnt += temp;
+		remainder -= (*this)*temp;
+	}
+	
+	quotient >>= (divisor_digits * 2); // 保持精度
+	quotient += remain_cnt;
+
+	if (((quotient+1) * divisor) <= (*this))
 	{
-		*this = result;
+		quotient += (((*this)-((quotient)*divisor))/divisor);
 	}
-	else
-	{
-		*this = result;
-		sign = false;
-	}
-	;
+
+	*this = quotient;
+	this->sign = result_sign;
 	return *this;
+}
+
+// 辅助函数：改进的初始倒数近似值计算
+BigInt BigInt::compute_decimal_reciprocal(const BigInt& d, int digits) {
+	std::string d_str = d.to_pure_string();
+	int high_digits = std::min(7,static_cast<int>(d_str.length()));
+	std::string high_part_str = d_str.substr(0, high_digits);
+	BigInt d_high(high_part_str);
+
+	// 计算10^(2*digits) / (d_high + 1)
+	BigInt numerator = BigInt(1)<<(2 * digits - (static_cast<int>(d_str.length()) - high_digits));
+	BigInt denominator = d_high;
+	BigInt reciprocal_approx = numerator / (denominator + 1);
+	return reciprocal_approx;
 }
 
 BigInt BigInt::operator%(const BigInt&rhs) const
@@ -271,25 +375,16 @@ BigInt BigInt::operator<<(const long long n) const
 	}
 	if (n % max_per_block_digit == 0)
 	{
-		long long n_block = n / max_per_block_digit;
-		BigInt result = 0;
-		for(int i=0;i<n_block-1;i++) //由于result事先已经有0了，所以相当于已经有了max_per_block_digit个0
-		{
-			result.value.push_back(0);
-		}
-		result.value.insert(result.value.end(), value.begin(), value.end());
-		return result;
+		BigInt result = *this;
+		return result <<= n;
+	}
+	if (n > max_per_block_digit) {
+		return (*this << ((n / max_per_block_digit) * max_per_block_digit)) << ((n % max_per_block_digit));
 	}
 	else
 	{
-		if (n >= max_per_block_digit) {
-			return (*this << ((n / max_per_block_digit) * max_per_block_digit)) << ((n % max_per_block_digit));
-		}
-		else
-		{
-			BigInt result = *this;
-			return result <<= n;
-		}
+		BigInt result = *this;
+		return result <<= n;
 	}
 
 }
@@ -337,7 +432,7 @@ void BigInt::left_shift(const long long n)
 	}
 	uint64_t carry = 0;
 	for (size_t i = 0; i < value.size(); ++i) {
-		uint64_t result = 1LL*value[i] * base + carry;
+		uint64_t result = (1LL*value[i]) * base + carry;
 		value[i]=result % max_per_block_num;
 		carry = result / max_per_block_num;
 	}
@@ -345,4 +440,104 @@ void BigInt::left_shift(const long long n)
 	if (carry > 0) {
 		value.push_back(carry);
 	}
+}
+
+BigInt BigInt::operator>>(const long long n) const
+{
+	if (n == 0)
+	{
+		return *this;	
+	}
+	if (this->is_zero())
+	{
+		return *this;
+	}
+	if (n % max_per_block_digit == 0)
+	{
+		BigInt result = *this;
+		return result >>= n;
+	}
+	if (n > max_per_block_digit) {
+		return (*this >> ((n / max_per_block_digit) * max_per_block_digit)) >> ((n % max_per_block_digit));
+	}
+	else
+	{
+		BigInt result = *this;
+		return result >>= n;
+	}
+}
+
+BigInt& BigInt::operator>>=(const long long n)
+{
+	if (n == 0)
+		return *this;
+	if (n % max_per_block_digit == 0)
+	{
+		long long n_block = n / max_per_block_digit;
+		if (value.size() <= n_block)
+		{
+			set_zero();
+		}
+		else
+		{
+			value.erase(value.begin(), value.begin() + n_block);
+		}
+		return *this;
+	}
+	if (n >= max_per_block_digit) {
+		return (*this >>= ((n / max_per_block_digit) * max_per_block_digit)) >>= ((n % max_per_block_digit));
+	}
+	else
+	{
+		this->right_shift(n);
+		return *this;
+	}
+	return *this;
+}
+
+void BigInt::right_shift(const long long n)
+{	
+	assert(n < max_per_block_digit and n >= 0);
+	if (n == 0)
+		return;
+	long long base = 1;
+	long long reverse_base = this->max_per_block_num;
+	for (int i = 0; i < n; i++)
+	{
+		base *= 10;
+		reverse_base /= 10;
+	}
+	for (int i = 0; i < value.size(); i++)
+	{
+		if (i != 0)
+		{
+			value[i - 1] += (value[i] % base) * (reverse_base);
+		}
+		value[i] /= base;
+	}
+	for (int i = value.size() - 1; i >= 0; i--)
+	{
+		if (value[i] != 0)
+			break;
+		value.pop_back();
+	}
+	if (value.empty())
+	{
+		set_zero();
+	}
+}
+
+BigInt& BigInt::multiply_by_small(const BigInt& rhs) 
+{
+	bool result_sign = (sign == rhs.sign);
+	BigInt result = 0;
+	BigInt temp = rhs;
+	for (int i = 0; i < value.size(); i++)
+	{
+		result += ((temp * value[i]));
+		temp<<=max_per_block_digit;
+	}
+	*this = result;
+	sign = result_sign;
+	return *this;
 }

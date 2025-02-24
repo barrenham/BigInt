@@ -463,6 +463,10 @@ TEST(arithmetic, multiply) {
 }
 
 TEST(arithmetic, division) {
+
+    EXPECT_EQ(BigInt(10)>>1, 1);
+    EXPECT_EQ(BigInt(100) >> 1, 10);
+    EXPECT_EQ(BigInt("100000000000000000000") >> 6, BigInt(std::string("100000000000000")));
     // 基础除法验证
     EXPECT_EQ(BigInt("100") / BigInt("10"), BigInt("10"));
     EXPECT_EQ(BigInt("999") / BigInt("3"), BigInt("333"));
@@ -594,3 +598,129 @@ TEST(arithmetic, division) {
         BigInt("1"));
 
 }
+
+
+// --------------------------
+// 左移测试（等价 *10^n）
+// --------------------------
+TEST(BigIntShiftTest, LeftShiftBasic) {
+    BigInt num("123");
+    num <<= 1;
+    EXPECT_EQ(num.to_string(), "1230");  // 左移1位
+}
+
+TEST(BigIntShiftTest, LeftShiftMultipleDigits) {
+    BigInt num("45");
+    num <<= 3;
+    EXPECT_EQ(num.to_string(), "45000");  // 左移3位
+}
+
+TEST(BigIntShiftTest, LeftShiftZeroShift) {
+    BigInt num("678");
+    num <<= 0;
+    EXPECT_EQ(num.to_string(), "678");  // 左移0位，数值不变
+}
+
+TEST(BigIntShiftTest, LeftShiftLargeNumber) {
+    BigInt num("12345678901234567890");
+    num <<= 5;
+    EXPECT_EQ(num.to_string(), "1234567890123456789000000");  // 大数左移5位
+}
+
+
+
+// --------------------------
+// 右移测试（等价 /10^n）
+// --------------------------
+TEST(BigIntShiftTest, RightShiftBasic) {
+    BigInt num("12345");
+    num >>= 2;
+    EXPECT_EQ(num.to_string(), "123");  // 右移2位
+}
+
+TEST(BigIntShiftTest, RightShiftToZero) {
+    BigInt num("999");
+    num >>= 4;
+    EXPECT_EQ(num.to_string(), "0");  // 右移超过位数，结果为0
+}
+
+TEST(BigIntShiftTest, RightShiftZeroShift) {
+    BigInt num("456");
+    num >>= 0;
+    EXPECT_EQ(num.to_string(), "456");  // 右移0位，数值不变
+}
+
+TEST(BigIntShiftTest, RightShiftNegativeNumber) {
+    BigInt num("-12345");
+    num >>= 2;
+    EXPECT_EQ(num.to_string(), "-123");  // 负数右移保持符号
+}
+
+
+
+// 运行测试
+int main(int argc, char** argv) {
+    testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
+}
+
+
+// --------------------------
+// 正常除法测试
+// --------------------------
+TEST(BigIntDivideSmallTest, ExactDivision) {
+    BigInt num("1000");
+    num.divide_by_small(10);
+    EXPECT_EQ(num.to_string(), "100");  // 1000 / 10 = 100（无余数）
+}
+
+TEST(BigIntDivideSmallTest, DivisionWithRemainder) {
+    BigInt num("12345");
+    num.divide_by_small(100);
+    EXPECT_EQ(num.to_string(), "123");  // 12345 / 100 = 123（余数45被丢弃）
+}
+
+TEST(BigIntDivideSmallTest, MultiBlockDivision) {
+    BigInt num("1000000000");  // 假设内部存储为 [0, 1]（base=1e9）
+    num.divide_by_small(2);
+    EXPECT_EQ(num.to_string(), "500000000");  // 1e9 / 2 = 5e8
+}
+
+// --------------------------
+// 边界值测试
+// --------------------------
+TEST(BigIntDivideSmallTest, DivideByOne) {
+    BigInt num("987654321");
+    num.divide_by_small(1);
+    EXPECT_EQ(num.to_string(), "987654321");  // 任何数 / 1 = 自身
+}
+
+TEST(BigIntDivideSmallTest, DivideZero) {
+    BigInt num("0");
+    num.divide_by_small(5);
+    EXPECT_EQ(num.to_string(), "0");  // 0 / 非零数 = 0
+}
+
+TEST(BigIntDivideSmallTest, ResultBecomesZero) {
+    BigInt num("999");
+    num.divide_by_small(1000);
+    EXPECT_EQ(num.to_string(), "0");  // 999 / 1000 = 0
+}
+
+TEST(BigIntDivideSmallTest, MaxDivisor) {
+    BigInt num("4294967296");  // 2^32
+    num.divide_by_small(4294967295u);  // UINT32_MAX
+    EXPECT_EQ(num.to_string(), "1");  // 4294967296 / 4294967295 ≈ 1
+}
+
+
+
+// --------------------------
+// 辅助功能测试（前导零处理）
+// --------------------------
+TEST(BigIntDivideSmallTest, LeadingZerosRemoved) {
+    BigInt num("00012345");  // 构造函数应规范化为 "12345"
+    num.divide_by_small(5);
+    EXPECT_EQ(num.to_string(), "2469");  // 12345 / 5 = 2469
+}
+
